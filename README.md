@@ -1,0 +1,1 @@
+SmartGastro es un sistema de gestión integral especializado para foodtrucks y gastronomía itinerante. Permite administrar ventas en tiempo real, automatizar el control de stock con alertas de inventario crítico y optimizar la planificación de eventos mediante la integración con un servicio meteorológico externo que proyecta la demanda según el clima.
