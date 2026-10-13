@@ -3,6 +3,12 @@ Django settings for smartGastro project.
 """
 
 from pathlib import Path
+from django.db.backends.base.base import BaseDatabaseWrapper
+from django.db.backends.mysql.features import DatabaseFeatures
+
+# Desactivar verificación de versión para compatibilidad con XAMPP
+BaseDatabaseWrapper.check_database_version_supported = lambda self: None
+DatabaseFeatures.can_return_columns_from_insert = False
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -72,6 +78,7 @@ DATABASES = {
 }
 
 
+
 # Password validation
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -104,3 +111,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 
 STATIC_URL = 'static/'
+
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'inventario'
+LOGOUT_REDIRECT_URL = 'login'

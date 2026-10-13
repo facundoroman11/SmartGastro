@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartGastro - Inventario</title>
+    <!-- Carga rápida de Tailwind CSS vía CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">Gestión de Inventario </h1>
+    <div class="flex items-center gap-4">
+        <span class="text-sm text-gray-600">Hola, <strong>{{ user.username }}</strong></span>
+        <a href="{% url 'logout' %}" class="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-1.5 px-3 rounded-md transition duration-150">
+            Cerrar Sesión
+        </a>
+    </div>
+</div>
+        
+        <!-- Formulario para agregar producto -->
+        <div class="bg-white rounded-lg shadow-md mb-8 overflow-hidden">
+            <div class="bg-blue-600 px-6 py-4">
+                <h2 class="text-lg font-semibold text-white">Agregar Nuevo Producto</h2>
+            </div>
+            <div class="p-6">
+                <form method="POST" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-4">
+                    {% csrf_token %}
+                    <div class="md:col-span-3">
+                        <input type="text" name="nombre" placeholder="Nombre" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="md:col-span-2">
+                        <input type="number" step="0.01" name="cantidad" placeholder="Cantidad" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="md:col-span-2">
+                        <input type="text" name="unidad_medida" placeholder="Unidad (kg, L, un)" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="md:col-span-2">
+                        <input type="number" step="0.01" name="precio_unitario" placeholder="Precio U." required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="md:col-span-2">
+                        <input type="number" step="0.01" name="stock_minimo" placeholder="Stock Mín." required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="md:col-span-1">
+                        <button type="submit" 
+                                class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                            +
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla de productos -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-700">Productos en Stock</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 border-b border-gray-200 text-gray-600 uppercase text-xs font-semibold">
+                            <th class="py-3 px-6">Producto</th>
+                            <th class="py-3 px-6">Cantidad</th>
+                            <th class="py-3 px-6">Unidad</th>
+                            <th class="py-3 px-6">Precio Unitario</th>
+                            <th class="py-3 px-6">Stock Mínimo</th>
+                            <th class="py-3 px-6 text-center">Estado</th>
+                            <th class="py-3 px-6 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 text-sm">
+                        {% for p in productos %}
+                        <tr class="{% if p.cantidad <= p.stock_minimo %}bg-red-50 hover:bg-red-100{% else %}hover:bg-gray-50{% endif %} transition duration-150">
+                            <td class="py-4 px-6 font-medium text-gray-900">{{ p.nombre }}</td>
+                            <td class="py-4 px-6">{{ p.cantidad }}</td>
+                            <td class="py-4 px-6">{{ p.unidad_medida }}</td>
+                            <td class="py-4 px-6">${{ p.precio_unitario }}</td>
+                            <td class="py-4 px-6">{{ p.stock_minimo }}</td>
+                            <td class="py-4 px-6 text-center">
+                                {% if p.cantidad <= p.stock_minimo %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Stock Bajo
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Ok
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <a href="{% url 'eliminar_producto' p.id %}" 
+                                   onclick="return confirm('¿Seguro que deseas eliminar este producto?');" 
+                                   class="text-red-600 hover:text-red-900 font-medium hover:underline">
+                                    Eliminar
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="py-6 px-6 text-center text-gray-500">
+                                No hay productos registrados aún.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
