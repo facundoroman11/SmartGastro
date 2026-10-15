@@ -94,13 +94,17 @@
                                     </span>
                                 {% endif %}
                             </td>
-                            <td class="py-4 px-6 text-center">
-                                <a href="{% url 'eliminar_producto' p.id %}" 
-                                   onclick="return confirm('¿Seguro que deseas eliminar este producto?');" 
-                                   class="text-red-600 hover:text-red-900 font-medium hover:underline">
-                                    Eliminar
-                                </a>
-                            </td>
+<td class="py-4 px-6 text-center space-x-3">
+    <a href="{% url 'editar_producto' p.id %}" 
+       class="text-blue-600 hover:text-blue-900 font-medium hover:underline">
+        Editar
+    </a>
+    <a href="{% url 'eliminar_producto' p.id %}" 
+       onclick="return confirm('¿Seguro que deseas eliminar este producto?');" 
+       class="text-red-600 hover:text-red-900 font-medium hover:underline">
+        Eliminar
+    </a>
+</td>
                         </tr>
                         {% empty %}
                         <tr>

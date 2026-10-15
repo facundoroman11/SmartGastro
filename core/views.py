@@ -33,3 +33,19 @@ def eliminar_producto(request, id):
 def salir(request):
     logout(request)
     return redirect('login')
+
+#aditar
+@login_required
+def editar_producto(request, id):
+    producto = get_object_or_404(Producto, id=id)
+    
+    if request.method == 'POST':
+        producto.nombre = request.POST.get('nombre')
+        producto.cantidad = request.POST.get('cantidad')
+        producto.unidad_medida = request.POST.get('unidad_medida')
+        producto.precio_unitario = request.POST.get('precio_unitario')
+        producto.stock_minimo = request.POST.get('stock_minimo')
+        producto.save()
+        return redirect('inventario')
+
+    return render(request, 'core/editar_producto.html', {'producto': producto})
