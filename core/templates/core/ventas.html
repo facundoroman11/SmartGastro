@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartGastro - Ventas y Métricas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
+    <!-- Navegación principal -->
+    <nav class="bg-white shadow-sm border-b mb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-gray-800">SmartGastro</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="{% url 'inventario' %}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-semibold text-sm transition duration-150">
+                        Volver al Inventario
+                    </a>
+                    <span class="text-sm text-gray-600">Hola, <strong>{{ user.username }}</strong></span>
+                    <a href="{% url 'salir' %}" class="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-1.5 px-3 rounded-md transition duration-150">
+                        Cerrar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Encabezado de la Sección -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Métricas y Registro de Ventas</h1>
+            <p class="text-sm text-gray-500 mt-1">Control diario de ingresos, transacciones y ticket promedio </p>
+        </div>
+
+        <!-- Tarjetas de Métricas del Día -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-green-500">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Recaudado Hoy</p>
+                <p class="text-3xl font-extrabold text-gray-900 mt-2">${{ total_recaudado_hoy }}</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Cantidad de Ventas Hoy</p>
+                <p class="text-3xl font-extrabold text-gray-900 mt-2">{{ cantidad_ventas_hoy }}</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-purple-500">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Ticket Promedio</p>
+                <p class="text-3xl font-extrabold text-gray-900 mt-2">${{ ticket_promedio|floatformat:2 }}</p>
+            </div>
+        </div>
+
+        <!-- Formulario de Registro de Venta -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Registrar Nueva Venta</h2>
+            
+            <form method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {% csrf_token %}
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Producto</label>
+                    <select name="producto" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Seleccionar producto...</option>
+                        {% for p in productos %}
+                        <option value="{{ p.id }}">{{ p.nombre }} (${{ p.precio_unitario }} | Stock: {{ p.cantidad }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cantidad</label>
+                    <input type="number" step="0.01" min="0.01" name="cantidad" placeholder="Ej: 2" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Método de Pago</label>
+                    <select name="metodo_pago" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                        <option value="transferencia">Transferencia</option>
+                    </select>
+                </div>
+
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-150">
+                        Confirmar Venta
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Historial de Últimas Ventas -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-12">
+            <div class="p-4 border-b border-gray-200 bg-gray-50">
+                <h2 class="text-base font-bold text-gray-800">Últimas Transacciones Registradas</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-gray-100 text-xs text-gray-700 uppercase border-b">
+                        <tr>
+                            <th class="p-4">N° Transacción</th>
+                            <th class="p-4">Fecha y Hora</th>
+                            <th class="p-4">Método de Pago</th>
+                            <th class="p-4">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for v in ultimas_ventas %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-4 font-semibold text-gray-900">#{{ v.id }}</td>
+                            <td class="p-4">{{ v.fecha|date:"d/m/Y H:i" }}</td>
+                            <td class="p-4 uppercase">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    {{ v.get_metodo_pago_display }}
+                                </span>
+                            </td>
+                            <td class="p-4 font-bold text-green-600">${{ v.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="p-6 text-center text-gray-400">
+                                No se han registrado ventas el día de hoy.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
