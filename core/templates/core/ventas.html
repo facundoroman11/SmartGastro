@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartGastro - Ventas y Métricas</title>
+    <title>SmartGastro - Cobro Rápido POS</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen">
@@ -29,10 +29,19 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
+        <!-- Mensajes de Alerta / Notificaciones (HU04) -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-6 p-4 rounded-md {% if message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700{% else %}bg-green-100 border border-green-400 text-green-700{% endif %} font-medium shadow-sm">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <!-- Encabezado de la Sección -->
         <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">Métricas y Registro de Ventas</h1>
-            <p class="text-sm text-gray-500 mt-1">Control diario de ingresos, transacciones y ticket promedio </p>
+            <h1 class="text-3xl font-bold text-gray-900">Cobro Ágil y Métricas</h1>
+            <p class="text-sm text-gray-500 mt-1">Registro rápido con cálculo de vuelto y selección interactiva de pago</p>
         </div>
 
         <!-- Tarjetas de Métricas del Día -->
@@ -53,42 +62,80 @@
             </div>
         </div>
 
-        <!-- Formulario de Registro de Venta -->
+        <!-- Formulario POS Rápido -->
         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">Registrar Nueva Venta</h2>
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Registrar Venta de Mostrador</h2>
             
-            <form method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <form method="POST" id="form-venta" class="space-y-6">
                 {% csrf_token %}
                 
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Producto</label>
-                    <select name="producto" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <option value="">Seleccionar producto...</option>
-                        {% for p in productos %}
-                        <option value="{{ p.id }}">{{ p.nombre }} (${{ p.precio_unitario }} | Stock: {{ p.cantidad }})</option>
-                        {% endfor %}
-                    </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Producto -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Producto</label>
+                       <select name="producto" id="select-producto" class="w-full border border-gray-300 rounded-md p-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+    <option value="" data-precio="0">Seleccionar producto...</option>
+    {% for p in productos %}
+        {% if p.cantidad > 0 %}
+            <option value="{{ p.id }}" data-precio="{{ p.precio_unitario }}" data-stock="{{ p.cantidad }}">
+                {{ p.nombre }} (${{ p.precio_unitario }} | Stock: {{ p.cantidad }})
+            </option>
+        {% else %}
+            <option value="{{ p.id }}" data-precio="{{ p.precio_unitario }}" data-stock="0" disabled class="text-red-400 bg-gray-100">
+                ❌ {{ p.nombre }} (AGOTADO)
+            </option>
+        {% endif %}
+    {% endfor %}
+</select>
+                    </div>
+
+                    <!-- Cantidad -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Cantidad</label>
+                        <input type="number" step="0.01" min="0.01" name="cantidad" id="input-cantidad" placeholder="Ej: 1" class="w-full border border-gray-300 rounded-md p-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
                 </div>
 
+                <!-- Botones Rápida Selección de Medio de Pago (HU04) -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cantidad</label>
-                    <input type="number" step="0.01" min="0.01" name="cantidad" placeholder="Ej: 2" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Medio de Pago</label>
+                    <input type="hidden" name="metodo_pago" id="metodo_pago_input" value="efectivo">
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <button type="button" data-metodo="efectivo" id="btn-efectivo" class="btn-pago py-3 px-4 rounded-lg border-2 font-bold text-sm flex items-center justify-center gap-2 transition border-blue-600 bg-blue-50 text-blue-700">
+                            💵 Efectivo
+                        </button>
+                        <button type="button" data-metodo="tarjeta" id="btn-tarjeta" class="btn-pago py-3 px-4 rounded-lg border-2 border-gray-200 text-gray-600 font-bold text-sm flex items-center justify-center gap-2 hover:border-gray-300 transition">
+                            💳 Tarjeta
+                        </button>
+                        <button type="button" data-metodo="transferencia" id="btn-transferencia" class="btn-pago py-3 px-4 rounded-lg border-2 border-gray-200 text-gray-600 font-bold text-sm flex items-center justify-center gap-2 hover:border-gray-300 transition">
+                            🏦 Transferencia
+                        </button>
+                        <button type="button" data-metodo="qr" id="btn-qr" class="btn-pago py-3 px-4 rounded-lg border-2 border-gray-200 text-gray-600 font-bold text-sm flex items-center justify-center gap-2 hover:border-gray-300 transition">
+                            📱 Mercado Pago / QR
+                        </button>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Método de Pago</label>
-                    <select name="metodo_pago" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <option value="efectivo">Efectivo</option>
-                        <option value="tarjeta">Tarjeta</option>
-                        <option value="transferencia">Transferencia</option>
-                    </select>
+                <!-- Calculadora de Vuelto para Efectivo (HU04) -->
+                <div id="seccion-vuelto" class="p-4 bg-blue-50 rounded-lg border border-blue-200 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <div>
+                        <span class="block text-xs font-bold text-blue-800 uppercase">Total a Cobrar</span>
+                        <span class="text-2xl font-black text-blue-900" id="lbl-total">$0.00</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-blue-800 uppercase mb-1">Efectivo Recibido</label>
+                        <input type="number" step="0.01" min="0" name="monto_recibido" id="input-recibido" placeholder="Ej: 5000" class="w-full border border-blue-300 rounded-md p-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <span class="block text-xs font-bold text-blue-800 uppercase">Vuelto a Entregar</span>
+                        <span class="text-2xl font-black text-green-600" id="lbl-vuelto">$0.00</span>
+                    </div>
                 </div>
 
-                <div class="flex items-end">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-150">
-                        Confirmar Venta
-                    </button>
-                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-3.5 px-4 rounded-lg text-base shadow transition duration-150 uppercase tracking-wider">
+                    ⚡ Confirmar Cobro
+                </button>
             </form>
         </div>
 
@@ -115,7 +162,7 @@
                             <td class="p-4">{{ v.fecha|date:"d/m/Y H:i" }}</td>
                             <td class="p-4 uppercase">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                                    {{ v.get_metodo_pago_display }}
+                                    {{ v.get_metodo_pago_display|default:v.metodo_pago }}
                                 </span>
                             </td>
                             <td class="p-4 font-bold text-green-600">${{ v.total }}</td>
@@ -133,5 +180,70 @@
         </div>
 
     </div>
+
+    <!-- SCRIPT DE INTERACCIÓN AL FINAL DEL BODY -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selectProducto = document.getElementById('select-producto');
+            const inputCantidad = document.getElementById('input-cantidad');
+            const inputRecibido = document.getElementById('input-recibido');
+            const lblTotal = document.getElementById('lbl-total');
+            const lblVuelto = document.getElementById('lbl-vuelto');
+            const inputMetodoPago = document.getElementById('metodo_pago_input');
+            const seccionVuelto = document.getElementById('seccion-vuelto');
+            const botonesPago = document.querySelectorAll('.btn-pago');
+
+            function calcularTotal() {
+                const precio = parseFloat(selectProducto.options[selectProducto.selectedIndex]?.getAttribute('data-precio') || 0);
+                const cantidad = parseFloat(inputCantidad.value || 0);
+                const total = precio * cantidad;
+                
+                lblTotal.innerText = `$${total.toFixed(2)}`;
+                calcularVuelto(total);
+            }
+
+            function calcularVuelto(totalActual) {
+                const total = totalActual !== undefined ? totalActual : parseFloat(lblTotal.innerText.replace('$', '') || 0);
+                const recibido = parseFloat(inputRecibido.value || 0);
+                const vuelto = recibido - total;
+
+                if (vuelto >= 0) {
+                    lblVuelto.innerText = `$${vuelto.toFixed(2)}`;
+                    lblVuelto.className = 'text-2xl font-black text-green-600';
+                } else {
+                    lblVuelto.innerText = `$0.00 (Falta $${Math.abs(vuelto).toFixed(2)})`;
+                    lblVuelto.className = 'text-xl font-bold text-red-500';
+                }
+            }
+
+            // Event Listeners para inputs
+            selectProducto.addEventListener('change', calcularTotal);
+            inputCantidad.addEventListener('input', calcularTotal);
+            inputRecibido.addEventListener('input', () => calcularVuelto());
+
+            // Listeners para botones de Medio de Pago
+            botonesPago.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const metodo = this.getAttribute('data-metodo');
+                    inputMetodoPago.value = metodo;
+
+                    // Resetear estilos
+                    botonesPago.forEach(b => {
+                        b.className = 'btn-pago py-3 px-4 rounded-lg border-2 border-gray-200 text-gray-600 font-bold text-sm flex items-center justify-center gap-2 hover:border-gray-300 transition';
+                    });
+
+                    // Estilo activo
+                    this.className = 'btn-pago py-3 px-4 rounded-lg border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold text-sm flex items-center justify-center gap-2 transition';
+
+                    // Ocultar/Mostrar calculadora de vuelto
+                    if (metodo === 'efectivo') {
+                        seccionVuelto.classList.remove('hidden');
+                    } else {
+                        seccionVuelto.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

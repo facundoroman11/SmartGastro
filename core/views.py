@@ -5,6 +5,7 @@ from django.contrib.auth import logout
 from django.db.models import Sum
 from django.utils import timezone
 from .models import Producto, Venta, DetalleVenta
+from django.contrib import messages
 
 
 @login_required
@@ -64,14 +65,41 @@ def inventario(request):
 def ventas(request):
     if request.method == "POST":
         producto_id = request.POST.get("producto")
-        cantidad_vendida = float(request.POST.get("cantidad"))
+        cantidad_vendida = float(request.POST.get("cantidad", 0))
         metodo_pago = request.POST.get("metodo_pago")
+        monto_recibido = request.POST.get("monto_recibido")
 
         producto = get_object_or_404(Producto, id=producto_id)
 
+        # 1. Validación de Stock Disponible 
+       # 1. Validación de Stock Disponible (HU04)
+        if producto.cantidad <= 0:
+            messages.error(
+                request,
+                f"¡Producto agotado! {producto.nombre} no tiene stock disponible.",
+            )
+            return redirect("ventas")
+
+        if cantidad_vendida > producto.cantidad:
+            messages.error(
+                request,
+                f"¡Stock insuficiente! Solo quedan {producto.cantidad} unidades de {producto.nombre}.",
+            )
+            return redirect("ventas")
+
         subtotal = float(producto.precio_unitario) * cantidad_vendida
 
-        nueva_venta = Venta.objects.create(total=subtotal, metodo_pago=metodo_pago)
+        # 2. Cálculo de vuelto para efectivo
+        vuelto = 0.0
+        if metodo_pago == "efectivo" and monto_recibido:
+            monto_recibido = float(monto_recibido)
+            if monto_recibido >= subtotal:
+                vuelto = monto_recibido - subtotal
+
+        # Guardar la transacción
+        nueva_venta = Venta.objects.create(
+            total=subtotal, metodo_pago=metodo_pago
+        )
 
         DetalleVenta.objects.create(
             venta=nueva_venta,
@@ -81,19 +109,33 @@ def ventas(request):
             subtotal=subtotal,
         )
 
+        # Descontar stock
         producto.cantidad = float(producto.cantidad) - cantidad_vendida
         producto.save()
 
+        # Feedback al usuario (HU04)
+        if vuelto > 0:
+            messages.success(
+                request,
+                f"Venta #{nueva_venta.id} registrada. ¡Entregar vuelto de ${vuelto:.2f}!",
+            )
+        else:
+            messages.success(
+                request, f"Venta #{nueva_venta.id} registrada con éxito."
+            )
+
         return redirect("ventas")
 
-    # CAMBIO AQUÍ: Usamos timezone.localdate() para considerar la hora local
+    # Métricas del Día
     hoy_local = timezone.localdate()
     ventas_hoy = Venta.objects.filter(fecha__date=hoy_local)
 
     total_recaudado_hoy = ventas_hoy.aggregate(Sum("total"))["total__sum"] or 0
     cantidad_ventas_hoy = ventas_hoy.count()
     ticket_promedio = (
-        (total_recaudado_hoy / cantidad_ventas_hoy) if cantidad_ventas_hoy > 0 else 0
+        (total_recaudado_hoy / cantidad_ventas_hoy)
+        if cantidad_ventas_hoy > 0
+        else 0
     )
 
     productos = Producto.objects.all()
