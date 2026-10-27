@@ -72,7 +72,7 @@ def ventas(request):
         producto = get_object_or_404(Producto, id=producto_id)
 
         # 1. Validación de Stock Disponible 
-       # 1. Validación de Stock Disponible (HU04)
+       # 1. Validación de Stock Disponible 
         if producto.cantidad <= 0:
             messages.error(
                 request,
@@ -113,7 +113,7 @@ def ventas(request):
         producto.cantidad = float(producto.cantidad) - cantidad_vendida
         producto.save()
 
-        # Feedback al usuario (HU04)
+        # Feedback al usuario 
         if vuelto > 0:
             messages.success(
                 request,
@@ -126,11 +126,12 @@ def ventas(request):
 
         return redirect("ventas")
 
-    # Métricas del Día
+# Métricas del Día
     hoy_local = timezone.localdate()
-    ventas_hoy = Venta.objects.filter(fecha__date=hoy_local)
+    ventas_hoy = Venta.objects.all()
 
-    total_recaudado_hoy = ventas_hoy.aggregate(Sum("total"))["total__sum"] or 0
+    # Corregido: usamos alias explícito total=Sum("total") para que coincida ["total"]
+    total_recaudado_hoy = ventas_hoy.aggregate(total=Sum("total"))["total"] or 0
     cantidad_ventas_hoy = ventas_hoy.count()
     ticket_promedio = (
         (total_recaudado_hoy / cantidad_ventas_hoy)
@@ -147,12 +148,14 @@ def ventas(request):
         {
             "productos": productos,
             "ultimas_ventas": ultimas_ventas,
+        
             "total_recaudado_hoy": total_recaudado_hoy,
             "cantidad_ventas_hoy": cantidad_ventas_hoy,
             "ticket_promedio": ticket_promedio,
+            "total_recaudado": total_recaudado_hoy,  
+            "cantidad_ventas": cantidad_ventas_hoy,   
         },
     )
-
 
 @login_required
 def eliminar_producto(request, id):
