@@ -1,10 +1,14 @@
 """
 Django settings for smartGastro project.
 """
-
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 from django.db.backends.base.base import BaseDatabaseWrapper
 from django.db.backends.mysql.features import DatabaseFeatures
+
+
+load_dotenv()
 
 # Desactivar verificación de versión para compatibilidad con XAMPP
 BaseDatabaseWrapper.check_database_version_supported = lambda self: None
@@ -12,9 +16,8 @@ DatabaseFeatures.can_return_columns_from_insert = False
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-jyf4#6ev@v@z0ebsgtsa-4)s5gjr67)f_w+3m*lnws+5s&s1kz'
-
-DEBUG = True
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-jyf4#6ev@v@z0ebsgtsa-4)s5gjr67)f_w+3m*lnws+5s&s1kz')
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = []
 
@@ -65,18 +68,16 @@ WSGI_APPLICATION = 'smartGastro.wsgi.application'
 
 # Database - Conexión con MySQL (Workbench)
 
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'smartgastro_db',
-        'USER': 'root',                
-        'PASSWORD': '',    
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+        'NAME': os.getenv('DB_NAME', 'smartgastro_db'),
+        'USER': os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
     }
 }
-
 
 
 # Password validation
